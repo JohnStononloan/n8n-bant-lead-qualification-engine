@@ -1,0 +1,23 @@
+{
+    "lead_score": 75,
+    "category": "high_priority",
+    "next_action": "immediate_outreach",
+    "company_name": "Bilans Accounting Services",
+    "website_url": "https://example-accounting-firm.pl",
+    "budget": "The firm provides a comprehensive spectrum of accounting packages with tiered pricing based on transaction volume, indicating recurring cash flow and budget flexibility.",
+    "authority": "Direct executive contact details are omitted on public assets. Recommended strategy involves outreach through reception targeting managing partners.",
+    "need": "Service breakdown indicates high exposure to repetitive manual processing across payroll and document verification. Lack of customer self-service portals suggests direct automation potential.",
+    "timing": "No active recruitment postings identified; however, promotional messaging indicates Q3/Q4 client expansion targets, creating favorable timing for operational efficiency discussions.",
+    "company_size": "medium",
+    "key_services": [
+        "full-cycle accounting",
+        "payroll administration",
+        "tax advisory"
+    ],
+    "automation_readiness": "medium",
+    "nip_numbers": [
+        "5252834571"
+    ],
+    "discovered_at": "2026-09-27T06:00:15.123Z",
+    "analyzed_at": "2026-09-27T06:01:42.890Z"
+}

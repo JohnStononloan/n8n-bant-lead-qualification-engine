@@ -1,0 +1,673 @@
+{
+  "name": "BANT Lead Scoring - HubSpot Edition",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "id": "4638490f-a13b-41d4-8eec-a5a9e26e7171",
+      "name": "Cron (Codziennie 6:00)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -4288,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"q\": \"biuro rachunkowe oferta cennik {{ new Date().getFullYear() }}\",\n  \"gl\": \"pl\",\n  \"hl\": \"pl\",\n  \"num\": 10\n}",
+        "options": {}
+      },
+      "id": "6464d1fc-5d15-4101-bef1-0d6e70ca08d9",
+      "name": "Serper.dev Search1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -4096,
+        592
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_SERPER_CREDENTIALS_ID",
+          "name": "Serper.dev account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Wyciągnij URL-e z wyników wyszukiwania i usuń duplikaty\nconst results = $input.first().json.organic || [];\nconst urls = [];\nconst seen = new Set();\n\nfor (const result of results) {\n  const url = result.link;\n  \n  // Pomijaj social media i katalogi\n  const skipDomains = ['facebook.com', 'linkedin.com', 'twitter.com', 'instagram.com', 'youtube.com', 'katalogfirm.pl', 'panoramafirm.pl'];\n  const shouldSkip = skipDomains.some(domain => url.includes(domain));\n  \n  if (!shouldSkip && !seen.has(url)) {\n    seen.add(url);\n    urls.push({\n      json: {\n        website_url: url,\n        title: result.title || '',\n        snippet: result.snippet || '',\n        search_position: result.position || 0,\n        discovered_at: new Date().toISOString()\n      }\n    });\n  }\n}\n\nreturn urls;"
+      },
+      "id": "8a01077f-45b1-4450-891f-40e0ef2de462",
+      "name": "Extract & Filter URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3920,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ogranicz liczbę URL-i przetwarzanych dziennie, aby nie przekroczyć darmowego limitu ScraperAPI\nconst MONTHLY_FREE_CREDITS = 1000; // sprawdź aktualny limit darmowego planu ScraperAPI\nconst RUN_DAYS_PER_MONTH = 30;\nconst SAFETY_MARGIN = 0.8; // zostaw 20% zapasu na ponowne próby/błędy\nconst DAILY_CAP = Math.floor((MONTHLY_FREE_CREDITS * SAFETY_MARGIN) / RUN_DAYS_PER_MONTH); // = 26\n\nconst items = $input.all();\n\nif (items.length > DAILY_CAP) {\n  console.warn(`Ograniczam ${items.length} URL-i do dziennego budżetu ${DAILY_CAP}`);\n}\n\nreturn items.slice(0, DAILY_CAP);"
+      },
+      "id": "8743fc50-8a27-4918-9bf1-7974be24be11",
+      "name": "Enforce Daily Credit Budget",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3744,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "e0abd869-a89b-4702-a263-3734078bacda",
+      "name": "Wait (Rate Limit)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        -3248,
+        592
+      ],
+      "webhookId": "fc85eb4c-f721-401b-a9ab-37cf095fc60f"
+    },
+    {
+      "parameters": {
+        "apiUrl": "={{ $json.website_url }}",
+        "apiOptionalParameters": {}
+      },
+      "id": "61457ef4-0fc7-4098-b849-f121142b5b5e",
+      "name": "ScraperAPI1",
+      "type": "n8n-nodes-scraperapi-official.scraperApi",
+      "typeVersion": 1,
+      "position": [
+        -3072,
+        592
+      ],
+      "credentials": {
+        "scraperApi-Api": {
+          "id": "YOUR_SCRAPERAPI_CREDENTIALS_ID",
+          "name": "ScraperAPI account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.error }}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "id": "b0e2b462-7edb-4ea4-b922-37d31af827cf",
+      "name": "IF Scraping Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -2912,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "dataPropertyName": "response.body",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "main_content",
+              "cssSelector": "main, article, [role='main'], .content, #content",
+              "skipSelectors": "script, style, noscript, svg, footer, header, nav, iframe, img, .cookie-banner, .menu"
+            },
+            {
+              "key": "text_content",
+              "cssSelector": "body",
+              "skipSelectors": "script, style, noscript, svg, footer, header, nav, iframe, img"
+            },
+            {
+              "key": "page_title",
+              "cssSelector": "title"
+            },
+            {
+              "key": "meta_description",
+              "cssSelector": "meta[name='description']",
+              "returnValue": "attribute",
+              "attribute": "content"
+            },
+            {
+              "key": "headings",
+              "cssSelector": "h1, h2",
+              "returnArray": true
+            },
+            {
+              "key": "contact_links",
+              "cssSelector": "a[href^='mailto:'], a[href^='tel:']",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {
+          "trimValues": true
+        }
+      },
+      "id": "66ce1e94-7fe1-4b38-905b-e4aeb77996c0",
+      "name": "Parse HTML",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -2672,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Waliduj NIP checksumą zamiast go maskować - NIP jest danymi publicznymi (CEIDG/KRS)\n// i kluczem do deduplikacji/wzbogacania rekordów w CRM.\nfunction extractValidNips(text) {\n  const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7];\n  const candidates = text.match(/\\b\\d{3}[-\\s]?\\d{2}[-\\s]?\\d{2}[-\\s]?\\d{3}\\b|\\b\\d{10}\\b/g) || [];\n  const valid = new Set();\n  for (const raw of candidates) {\n    const digits = raw.replace(/\\D/g, '');\n    if (digits.length !== 10) continue;\n    const sum = weights.reduce((acc, w, i) => acc + w * Number(digits[i]), 0);\n    const checksum = sum % 11;\n    if (checksum === Number(digits[9]) && checksum !== 10) valid.add(digits);\n  }\n  return [...valid];\n}\n\nconst items = $input.all();\nconst sanitizedItems = [];\n\nfor (const item of items) {\n  let text = item.json.main_content || item.json.text_content || \"\";\n\n  // Zbierz prawidłowe numery NIP PRZED jakąkolwiek anonimizacją tekstu\n  const nip_numbers = extractValidNips(text);\n\n  // Usuń e-maile\n  text = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/gi, \"[EMAIL]\");\n\n  // Usuń polskie numery telefonów (różne formaty)\n  text = text.replace(/(?:\\+?48)?[\\s-]?(?:\\d[\\s-]?){9}/g, \"[PHONE]\");\n  \n  // Usuń PESEL (11 cyfr) - to jest dana wrażliwa i pozostaje maskowana\n  text = text.replace(/\\b\\d{11}\\b/g, \"[PESEL]\");\n\n  // Usuń kody pocztowe\n  text = text.replace(/\\d{2}-\\d{3}/g, \"[POSTAL]\");\n\n  // Ujednolić białe znaki, aby oszczędzić tokeny przed obcięciem\n  text = text.replace(/\\s+/g, ' ').trim();\n\n  // Inteligentne obcięcie (zachowaj początek i koniec)\n  const maxLength = 6000;\n  let finalText = text;\n  let wasTruncated = false;\n  \n  if (text.length > maxLength) {\n    const keepStart = Math.floor(maxLength * 0.7);\n    const keepEnd = maxLength - keepStart - 10;\n    finalText = text.slice(0, keepStart) + \"\\n[...]\\n\" + text.slice(-keepEnd);\n    wasTruncated = true;\n  }\n\n  sanitizedItems.push({\n    json: {\n      ...item.json,\n      text_for_ai: finalText,\n      nip_numbers: nip_numbers,\n      original_length: text.length,\n      was_truncated: wasTruncated,\n      sanitized_at: new Date().toISOString()\n    }\n  });\n}\n\nreturn sanitizedItems;"
+      },
+      "id": "6fc71f34-6185-45c8-b032-7c8ecbfb65ad",
+      "name": "RODO Safeguard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2528,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o-mini\",\n  temperature: 0.3,\n  response_format: { type: \"json_object\" },\n  messages: [\n    {\n      role: \"user\",\n      content: `Jesteś analitykiem B2B specjalizującym się w ocenie potencjału leadów dla firm automatyzujących procesy biznesowe.\n\nPrzeanalizuj poniższą stronę internetową biura rachunkowego i oceń potencjał współpracy według metodologii BANT:\n\n**Budget (Budżet)**: Czy firma wydaje się mieć środki na automatyzację? Szukaj oznak: wielkość firmy, zakres usług, obecność na rynku.\n\n**Authority (Decyzyjność)**: Czy na stronie są informacje kontaktowe właściciela/decydenta? Czy to duża korporacja czy małe biuro?\n\n**Need (Potrzeba)**: Czy widać oznaki manualnych procesów, które można zautomatyzować? Brak nowoczesnych narzędzi?\n\n**Timing (Moment)**: Czy firma aktywnie się rozwija? Nowe usługi? Rekrutacja?\n\nZwróć TYLKO czysty JSON (obiekt) z polami:\n{\n  \"budget\": \"ocena budżetu (2-3 zdania)\",\n  \"authority\": \"ocena decyzyjności (2-3 zdania)\",\n  \"need\": \"ocena potrzeby automatyzacji (2-3 zdania)\",\n  \"timing\": \"ocena momentu na kontakt (2-3 zdania)\",\n  \"lead_score\": 75,\n  \"company_size\": \"small/medium/large\",\n  \"key_services\": [\"księgowość\", \"kadry\"],\n  \"automation_readiness\": \"low/medium/high\"\n}\n\nTreść strony:\n${$json.text_for_ai}`\n    }\n  ]\n}) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          }
+        }
+      },
+      "id": "9748af2a-c5c1-42a9-b21b-3bffa94b0804",
+      "name": "OpenAI BANT Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -2368,
+        480
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIALS_ID",
+          "name": "OpenAI account"
+        }
+      },
+      "notes": "Zastępuje przestarzały node OpenAI - wymusza response_format json_object przez bezpośrednie wywołanie API."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Dopasowanie po website_url zamiast po indeksie - odporne na przetasowanie\n// kolejności elementów przy równoległym przetwarzaniu (batching) w OpenAI BANT Analysis.\nconst previousItems = $('RODO Safeguard').all();\nconst currentItems = $input.all();\n\nconst byUrl = new Map(previousItems.map(it => [it.json.website_url, it]));\n\nconst out = [];\n\nfor (const item of currentItems) {\n  const previousItem = byUrl.get(item.json.website_url) || previousItems[0] || { json: {} };\n\n  try {\n    const raw = item.json.choices?.[0]?.message?.content || \"{}\";\n    const bant = JSON.parse(raw);\n    const score = Math.max(0, Math.min(100, parseInt(bant.lead_score) || 0));\n    \n    let category = 'low_priority';\n    let next_action = 'monitor';\n    if (score >= 70) {\n      category = 'high_priority';\n      next_action = 'immediate_outreach';\n    } else if (score >= 40) {\n      category = 'medium_priority';\n      next_action = 'nurture_sequence';\n    }\n    \n    out.push({ \n      json: { \n        ...previousItem.json,\n        \n        // Dane z BANT\n        budget: bant.budget || \"Brak danych\",\n        authority: bant.authority || \"Brak danych\",\n        need: bant.need || \"Brak danych\",\n        timing: bant.timing || \"Brak danych\",\n        lead_score: score,\n        company_size: bant.company_size || \"unknown\",\n        key_services: bant.key_services || [],\n        automation_readiness: bant.automation_readiness || \"unknown\",\n        category: category,\n        next_action: next_action,\n        parsing_successful: true,\n        analyzed_at: new Date().toISOString()\n      } \n    });\n  } catch (e) {\n    out.push({ \n      json: { \n        ...previousItem.json,\n        lead_score: 0,\n        category: 'parsing_error',\n        next_action: 'review_manually',\n        parsing_successful: false,\n        error_message: e.message,\n        analyzed_at: new Date().toISOString()\n      } \n    });\n  }\n}\n\nreturn out;"
+      },
+      "id": "6c0785e9-e151-440f-9599-608dce8e0869",
+      "name": "Parse & Validate BANT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2176,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.lead_score }}",
+              "operation": "largerEqual",
+              "value2": 70
+            }
+          ]
+        }
+      },
+      "id": "d71066af-c453-45b4-8169-3b5d1974918f",
+      "name": "IF Score >= 70",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1936,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{ 'lead-' + $json.analyzed_at.slice(0,10) + '-' + Math.random().toString(36).slice(2,7) }}@placeholder.com",
+        "additionalFields": {
+          "companyName": "={{ $json.page_title.split(' - ').slice(1).join(' - ') || $json.page_title }}\n",
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "lead_score",
+                "value": "={{ $json.lead_score }}"
+              },
+              {
+                "property": "bant_budget",
+                "value": "={{ $json.budget }}"
+              },
+              {
+                "property": "bant_authority",
+                "value": "={{ $json.authority }}"
+              },
+              {
+                "property": "bant_need",
+                "value": "={{ $json.need }}"
+              },
+              {
+                "property": "bant_timing",
+                "value": "={{ $json.timing }}"
+              },
+              {
+                "property": "company_size",
+                "value": "={{ $json.company_size }}"
+              }
+            ]
+          },
+          "firstName": "={{ ($json.page_title.includes('|') ? $json.page_title.split('|')[1] : ($json.page_title.includes('-') ? $json.page_title.split('-')[0] : $json.page_title)).trim() }}",
+          "lastName": "={{ 'Lead BANT (' + $json.lead_score + ')' }}",
+          "websiteUrl": "={{ $('Loop Over URLs').item.json.website_url }}"
+        },
+        "options": {}
+      },
+      "id": "ef8298cc-afcd-4dc7-9208-fa84c4b0aa6c",
+      "name": "Create Contact in HubSpot",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        -1744,
+        416
+      ],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "YOUR_HUBSPOT_CREDENTIALS_ID",
+          "name": "HubSpot Service Key account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "Tworzy kontakt w HubSpot TYLKO dla leadów >= 70 (bramkowane przez IF Score >= 70). Email jest placeholder - zaktualizuj później prawdziwym. NIP przekazywany jako klucz deduplikacji."
+    },
+    {
+      "parameters": {
+        "text": "=🔥 NOWY LEAD BANT: {{ $('Parse & Validate BANT').item.json.lead_score }}/100\n\n🏢 Firma: {{ $('Parse & Validate BANT').item.json.page_title.split('|')[0].trim() }}\n🌐 URL: {{ $('Loop Over URLs').item.json.website_url }}\n\n💰 Budżet: {{ $('Parse & Validate BANT').item.json.budget }}\n🎯 Potrzeba: {{ $('Parse & Validate BANT').item.json.need }}\n⏳ Timing: {{ $('Parse & Validate BANT').item.json.timing }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "3a81ddbe-a8b1-4661-bfaa-281fd97566ec",
+      "name": "Send a text message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1616,
+        416
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIALS_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "a901248b-4047-4a5a-b03f-640e41916a2b",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1440,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a2700a96-8664-4949-bf43-251661258e04",
+      "name": "Loop Over URLs",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -3488,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loguj nieudane scrapowanie\nconst item = $input.first();\nreturn [{\n  json: {\n    ...item.json,\n    scraping_failed: true,\n    lead_score: 0,\n    category: 'scraping_error',\n    error_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "10006d00-305f-4421-8f85-46b7a6d943eb",
+      "name": "Log Scraping Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2608,
+        848
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9415e316-bde2-42b8-a04e-0b58980043cd",
+      "name": "Continue Loop",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -2432,
+        848
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cron (Codziennie 6:00)": {
+      "main": [
+        [
+          {
+            "node": "Serper.dev Search1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Serper.dev Search1": {
+      "main": [
+        [
+          {
+            "node": "Extract & Filter URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Filter URLs": {
+      "main": [
+        [
+          {
+            "node": "Enforce Daily Credit Budget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enforce Daily Credit Budget": {
+      "main": [
+        [
+          {
+            "node": "Loop Over URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Rate Limit)": {
+      "main": [
+        [
+          {
+            "node": "ScraperAPI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ScraperAPI1": {
+      "main": [
+        [
+          {
+            "node": "IF Scraping Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Scraping Success": {
+      "main": [
+        [
+          {
+            "node": "Parse HTML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Scraping Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse HTML": {
+      "main": [
+        [
+          {
+            "node": "RODO Safeguard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RODO Safeguard": {
+      "main": [
+        [
+          {
+            "node": "OpenAI BANT Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI BANT Analysis": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate BANT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate BANT": {
+      "main": [
+        [
+          {
+            "node": "IF Score >= 70",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Score >= 70": {
+      "main": [
+        [
+          {
+            "node": "Create Contact in HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Contact in HubSpot": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Loop Over URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over URLs": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Wait (Rate Limit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Scraping Error": {
+      "main": [
+        [
+          {
+            "node": "Continue Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continue Loop": {
+      "main": [
+        [
+          {
+            "node": "Loop Over URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0d7c04f1-fe64-4329-8539-7718c0b41c20",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [
+    {
+      "id": "95c76273-44ff-41c3-b882-59722f8310c1",
+      "name": "Discover candidate websites",
+      "nodeIds": [
+        "6464d1fc-5d15-4101-bef1-0d6e70ca08d9",
+        "8a01077f-45b1-4450-891f-40e0ef2de462",
+        "8743fc50-8a27-4918-9bf1-7974be24be11"
+      ],
+      "description": "Daily Google search via Serper for accounting-firm sites, deduped and capped to the free-tier scraping budget"
+    },
+    {
+      "id": "7850a295-e529-4d2f-baa7-7f07597efe4d",
+      "name": "Scrape site content",
+      "nodeIds": [
+        "e0abd869-a89b-4702-a263-3734078bacda",
+        "61457ef4-0fc7-4098-b849-f121142b5b5e",
+        "b0e2b462-7edb-4ea4-b922-37d31af827cf"
+      ],
+      "description": "Fetches each site through ScraperAPI with rate-limit spacing, routing failures to error logging"
+    },
+    {
+      "id": "e8d0a3d3-4401-471d-a278-8d03e1763fe5",
+      "name": "Sanitize and score lead",
+      "nodeIds": [
+        "66ce1e94-7fe1-4b38-905b-e4aeb77996c0",
+        "6fc71f34-6185-45c8-b032-7c8ecbfb65ad",
+        "9748af2a-c5c1-42a9-b21b-3bffa94b0804",
+        "6c0785e9-e151-440f-9599-608dce8e0869"
+      ],
+      "description": "Extracts page content, strips PII while keeping public NIP numbers, then scores BANT fit via OpenAI"
+    },
+    {
+      "id": "557fea15-b953-4717-9bf0-3e6e5edcba06",
+      "name": "Notify qualified leads",
+      "nodeIds": [
+        "d71066af-c453-45b4-8169-3b5d1974918f",
+        "ef8298cc-afcd-4dc7-9208-fa84c4b0aa6c",
+        "3a81ddbe-a8b1-4661-bfaa-281fd97566ec",
+        "a901248b-4047-4a5a-b03f-640e41916a2b"
+      ],
+      "description": "Only leads scoring 70+ get a HubSpot contact and a Telegram alert; others just continue the loop"
+    },
+    {
+      "id": "7749316b-8193-4b38-b371-97e8247d8d74",
+      "name": "Handle scraping failure",
+      "nodeIds": [
+        "10006d00-305f-4421-8f85-46b7a6d943eb",
+        "9415e316-bde2-42b8-a04e-0b58980043cd"
+      ],
+      "description": "Logs a failed scrape as a zero-score lead and resumes the loop without losing the batch"
+    }
+  ],
+  "id": "bant-lead-scoring-hubspot",
+  "tags": []
+}
