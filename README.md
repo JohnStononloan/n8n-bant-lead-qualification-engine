@@ -1,131 +1,75 @@
-# Autonomous BANT Lead Qualification & CRM Ingestion Engine
+# 🎯 Autonomous BANT Lead Qualification & CRM Ingestion Engine
 
-An event-driven n8n pipeline that automates web scraping, data extraction, deterministic BANT qualification (OpenAI), and conditional routing into HubSpot CRM alongside real-time Telegram sales alerts.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![n8n](https://img.shields.io/badge/n8n-Workflow%20Automation-EA4B71?logo=n8n&logoColor=white)](https://n8n.io/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-412991?logo=openai&logoColor=white)](https://openai.com/)
+[![HubSpot](https://img.shields.io/badge/HubSpot-CRM%20API-FF7A59?logo=hubspot&logoColor=white)](https://www.hubspot.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Telegram](https://img.shields.io/badge/Telegram-Sales%20Alerts-2CA5E0?logo=telegram&logoColor=white)](https://telegram.org/)
+
+An event-driven, production-grade automation pipeline built with **n8n** that acts as an autonomous **AI SDR (Sales Development Representative)**. The engine orchestrates target domain discovery via Serper, web scraping and HTML sanitization via ScraperAPI, deterministic **BANT qualification** using structured OpenAI prompts, and automated synchronization into **HubSpot CRM** coupled with instant **Telegram sales alerts**.
 
 ---
 
-## Architectural Overview
+## ⚡ Key Highlights & Business Capabilities
 
-The engine acts as a cost-optimized, automated SDR (Sales Development Representative). It discovers target domains, scrapes landing page contents, sanitizes raw text for compliance, extracts structured corporate identifiers, performs multi-vector BANT analysis via LLM, and synchronizes qualified leads to enterprise CRM.
+* **Autonomous Discovery & Ingestion:** Event-driven execution (Cron / Webhook) querying Google search index via Serper API, streaming targeted company domains into isolated processing queues.
+* **Resilient HTML Scraping & Sanitization:** Ingests live company web assets using ScraperAPI proxies, stripping tracking scripts, cookie banners, and boilerplates to optimize LLM context token usage.
+* **Deterministic BANT Evaluation:** Assesses target companies across structured dimensions:
+  * **Budget:** Analyzes pricing tiers, enterprise calculators, and service complexity.
+  * **Authority:** Verifies executive leadership presence and direct corporate decision pathways.
+  * **Need:** Identifies operational bottlenecks receptive to AI & workflow automation.
+  * **Timing:** Detects expansion momentum, hiring spikes, or regulatory shifts.
+* **Compliance & PII Redaction:** Contacts pass through regex-based sanitization and deterministic hashing (`lead-YYYY-MM-DD-[hash]@placeholder.com`), isolating verified tax IDs (`NIP`) while safeguarding data hygiene.
+* **Conditional CRM Quality Gate:** Strict routing logic (`lead_score >= 70`) filters out low-intent leads, preventing CRM database pollution and outbound sales fatigue.
+
+---
+
+## 🏗️ System Architecture & Data Flow
 
 ```text
-[Cron / Webhook]
-       │
-       ▼
- [Serper API] ──(Web Discovery)
-       │
-       ▼
- [ScraperAPI] ──(HTML Ingestion & Sanitization)
-       │
-       ▼
- [Regex / Code] ──(Tax ID / NIP Extraction & PII Redaction)
-       │
-       ▼
-[OpenAI Engine] ──(Deterministic BANT Scoring & Synthesis)
-       │
-       ▼
-[Decision Gate] ──(lead_score >= 70?)
-      ├── YES ──► [HubSpot CRM Integration] & [Telegram Alert Bot]
-      └── NO  ──► [Drop / Archive Lead]
-
-```
-
----
-
-## Key Features & Design Principles
-
-* **Cost-Optimized Validation Stack:** Built to run on zero-cost infrastructure limits during validation (Serper Free Tier, ScraperAPI base quota, and `gpt-4o-mini`). Includes built-in budget enforcement logic to prevent uncontrolled API credit consumption.
-* **Deterministic BANT Evaluation:** Evaluates public web assets across four distinct criteria:
-* **Budget:** Analyzes published service tiers, pricing calculators, and enterprise complexity.
-* **Authority:** Verifies organizational hierarchy signals and executive contact access.
-* **Need:** Identifies operational bottlenecks (e.g., manual accounting, payroll) receptive to automation.
-* **Timing:** Detects expansion momentum, active hiring spikes, or regulatory shifts.
-
-
-* **PII & Data Integrity Safeguards:** Prior to enrichment, public contact routing utilizes deterministic hashed placeholders (`lead-YYYY-MM-DD-[hash]@placeholder.com`), preserving lead uniqueness while isolating validated business tax identifiers (`NIP`) for official registry lookup.
-* **Conditional CRM Ingestion:** Enforces an automated quality gate (`lead_score >= 70`). Unqualified leads are purged from execution flow, preserving CRM database cleanliness and preventing outbound sales fatigue.
-
----
-
-## Proof of Work & Execution Results
-
-### 1. High-Precision CRM Ingestion (HubSpot)
-
-Qualified companies are immediately mapped and pushed into HubSpot with their respective scoring, synthetic identifiers, and domain references:
-
-### 2. Deep Qualitative Qualification
-
-Sales reps gain access to comprehensive qualifying context directly within the CRM custom record view, eliminating manual research overhead:
-
-### 3. Immediate Outbound Alerting (Telegram)
-
-High-priority leads trigger instant actionable briefs to mobile sales channels:
-
----
-
-## Project Structure
-
-```text
-├── assets/
+[Cron / Webhook Trigger]
+          │
+          ▼
+    [Serper API] ────────(Target Domain Discovery)
+          │
+          ▼
+   [ScraperAPI] ─────────(Raw HTML Ingestion & Sanitization)
+          │
+          ▼
+   [Regex / Code] ───────(NIP / Tax ID Extraction & PII Redaction)
+          │
+          ▼
+  [OpenAI Engine] ───────(Deterministic BANT Scoring & Synthesis)
+          │
+          ▼
+   [Decision Gate] ──────(lead_score >= 70?)
+         ├── YES ────────► [HubSpot CRM Integration] & [Telegram Alert Bot]
+         └── NO  ────────► [Drop / Archive Unqualified Lead]
+Orchestration: n8n self-hosted within a Docker environment with persistent volume storage.   LLM Engine: OpenAI gpt-4o-mini with temperature configured for deterministic JSON schema outputs.   Target CRM: HubSpot CRM API v3 with pre-mapped custom properties (bant_score, bant_summary, website).   Dispatch Layer: Telegram Bot API delivering real-time actionable notifications to sales teams[cite: 26].📸 Production Run Previews1. Workflow Architecture & CanvasFull end-to-end orchestration in n8n showing discovery, conditional filtering, regex data sanitization, LLM grading, and conditional CRM routing:2. High-Precision CRM Ingestion (HubSpot)Qualified companies are mapped and synchronized to HubSpot CRM with scores, domain references, and automated pipeline assignments:3. Deep Qualitative QualificationSales representatives receive direct qualifying context inside custom HubSpot properties, removing manual discovery overhead:4. Immediate Outbound Alerting (Telegram)High-intent leads immediately trigger actionable mobile alerts with direct links and executive summaries:📂 Repository StructurePlaintext├── .env.example                     # Environment template for API keys & tokens
+├── .gitignore                       # Isolation rules for secrets and local state
+├── docker-compose.yml               # Container deployment spec for n8n service
+│
+├── assets/                          # Production execution screenshots
 │   ├── hubspot_leads_table.png
 │   ├── hubspot_record_bant_view.png
 │   ├── n8n_workflow_canvas.png
 │   └── telegram_alert.png
-├── docs/
-│   ├── hubspot_custom_properties.md
-│   └── telegram_payload_example.json
-├── workflow/
-│   └── bant_lead_engine.json
-├── .env.example
-├── .gitignore
-├── docker-compose.yml
-└── README.md
-
-```
-
----
-
-## Setup & Deployment
-
-### 1. Environment Configuration
-
-Clone the repository and copy the environment template:
-
-```bash
+│
+├── docs/                            # Deployment specifications
+│   ├── hubspot_custom_properties.md # Required HubSpot custom property schema
+│   └── telegram_payload_example.json# Sample webhook event payload
+│
+└── workflow/
+    └── bant_lead_engine.json        # Exported production n8n workflow
+🚀 Quickstart & Deployment1. Environment SetupClone the repository and copy the environment template:Bashgit clone https://github.com/your-username/bant-lead-qualification-engine.git
+cd bant-lead-qualification-engine
 cp .env.example .env
-
-```
-
-Populate the missing values in `.env`:
-
-* `OPENAI_API_KEY`
-* `SERPER_API_KEY`
-* `SCRAPERAPI_KEY`
-* `HUBSPOT_ACCESS_TOKEN`
-* `TELEGRAM_BOT_TOKEN`
-* `TELEGRAM_CHAT_ID`
-
-### 2. HubSpot Custom Properties
-
-Before importing the workflow, ensure custom properties are defined in your HubSpot instance as documented in `docs/hubspot_custom_properties.md`.
-
-### 3. Workflow Import
-
-1. Start the n8n container via Docker:
-
-```bash
-docker compose up -d
-
-```
-
-2. Navigate to your n8n interface (`http://localhost:5678`).
-3. Select **Import from File** and upload `workflow/bant_lead_engine.json`.
-4. Attach your credential configurations to the respective nodes and activate the workflow.
-
----
-
-## Extensibility & Production Scaling
-
-* **Data Ingestion Agnostic:** The initial discovery step can be swapped from Google/Serper to Apollo.io, LinkedIn Sales Navigator exports, or official national company registers (KRS/CEIDG via REST).
-* **Configurable Scoring Thresholds:** Decision gates and prompt weights can be re-calibrated per industry vertical to match more stringent enterprise ICP constraints.
-* **Fail-Safe Operation:** Where pages omit structured pricing or team structures, the LLM prompt is engineered to record missing attributes rather than hallucinating validation points.
+Populate the required credentials in .env[cite: 26]:BashOPENAI_API_KEY=your_openai_api_key
+SERPER_API_KEY=your_serper_api_key
+SCRAPERAPI_KEY=your_scraperapi_key
+HUBSPOT_ACCESS_TOKEN=your_hubspot_token
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHAT_ID=your_telegram_chat_id
+2. Configure HubSpot PropertiesEnsure required custom properties are created in HubSpot prior to workflow import, as specified in docs/hubspot_custom_properties.md[cite: 26].3. Launch & Import WorkflowStart the n8n containerized service[cite: 26]:Bashdocker compose up -d
+Open your browser and navigate to http://localhost:5678[cite: 26].Select Workflows > Import from File and upload workflow/bant_lead_engine.json[cite: 26].Bind your credentials to the respective nodes and activate the workflow[cite: 26].🔒 Security & Data HygieneZero Hardcoded Secrets: Credentials, access tokens, and API keys are strictly injected via .env and secured n8n credential managers[cite: 26].PII Redaction Layer: Personal identity elements are stripped or hashed before evaluation to preserve privacy standards and prevent CRM contamination[cite: 26].Cost Cap Guardrails: Uses gpt-4o-mini with token constraints and validation quotas, preventing runaway billing on unvalidated web domains[cite: 26].
