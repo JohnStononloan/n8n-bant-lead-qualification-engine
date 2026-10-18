@@ -62,17 +62,25 @@ An event-driven, production-grade automation pipeline built with **n8n** that ac
 
 Full end-to-end orchestration in **n8n** showing discovery, conditional filtering, regex data sanitization, LLM grading, and conditional CRM routing:
 
+![n8n Workflow Canvas](assets/n8n_workflow_canvas.png)
+
 ### 2. High-Precision CRM Ingestion (HubSpot)
 
 Qualified companies are mapped and synchronized to HubSpot CRM with scores, domain references, and automated pipeline assignments:
+...
+![HubSpot Leads Table](assets/hubspot_leads_table.png)
 
 ### 3. Deep Qualitative Qualification
 
 Sales representatives receive direct qualifying context inside custom HubSpot properties, removing manual discovery overhead:
+...
+![HubSpot Record BANT View](assets/hubspot_record_bant_view.png)
 
 ### 4. Immediate Outbound Alerting (Telegram)
 
 High-intent leads immediately trigger actionable mobile alerts with direct links and executive summaries:
+...
+![Telegram Alert](assets/telegram_alert.png)
 
 ---
 
@@ -107,7 +115,7 @@ High-intent leads immediately trigger actionable mobile alerts with direct links
 Clone the repository and copy the environment template:
 
 ```bash
-git clone [https://github.com/your-username/bant-lead-qualification-engine.git](https://github.com/your-username/bant-lead-qualification-engine.git)
+git clone https://github.com/your-username/bant-lead-qualification-engine.git
 cd bant-lead-qualification-engine
 cp .env.example .env
 
@@ -150,8 +158,4 @@ docker compose up -d
 * **PII Redaction Layer:** Personal identity elements are stripped or hashed before evaluation to preserve privacy standards and prevent CRM contamination.
 * **Cost Cap Guardrails:** Uses `gpt-4o-mini` with token constraints and validation quotas, preventing runaway billing on unvalidated web domains.
 
-```
 
-Zapisz plik (Commit changes) – szary blok zamknie się dokładnie po diagramie ASCII, a poniżej wyrenderują się poprawne nagłówki i grafiki.
-
-```
