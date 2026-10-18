@@ -46,7 +46,30 @@ An event-driven, production-grade automation pipeline built with **n8n** that ac
    [Decision Gate] ──────(lead_score >= 70?)
          ├── YES ────────► [HubSpot CRM Integration] & [Telegram Alert Bot]
          └── NO  ────────► [Drop / Archive Unqualified Lead]
-Orchestration: n8n self-hosted within a Docker environment with persistent volume storage.   LLM Engine: OpenAI gpt-4o-mini with temperature configured for deterministic JSON schema outputs.   Target CRM: HubSpot CRM API v3 with pre-mapped custom properties (bant_score, bant_summary, website).   Dispatch Layer: Telegram Bot API delivering real-time actionable notifications to sales teams[cite: 26].📸 Production Run Previews1. Workflow Architecture & CanvasFull end-to-end orchestration in n8n showing discovery, conditional filtering, regex data sanitization, LLM grading, and conditional CRM routing:2. High-Precision CRM Ingestion (HubSpot)Qualified companies are mapped and synchronized to HubSpot CRM with scores, domain references, and automated pipeline assignments:3. Deep Qualitative QualificationSales representatives receive direct qualifying context inside custom HubSpot properties, removing manual discovery overhead:4. Immediate Outbound Alerting (Telegram)High-intent leads immediately trigger actionable mobile alerts with direct links and executive summaries:📂 Repository StructurePlaintext├── .env.example                     # Environment template for API keys & tokens
+Orchestration: n8n self-hosted within a Docker environment with persistent volume storage.
+
+LLM Engine: OpenAI gpt-4o-mini with temperature configured for deterministic JSON schema outputs.
+
+Target CRM: HubSpot CRM API v3 with pre-mapped custom properties (bant_score, bant_summary, website).
+
+Dispatch Layer: Telegram Bot API delivering real-time actionable notifications to sales teams.
+
+📸 Production Run Previews
+1. Workflow Architecture & Canvas
+Full end-to-end orchestration in n8n showing discovery, conditional filtering, regex data sanitization, LLM grading, and conditional CRM routing:
+
+2. High-Precision CRM Ingestion (HubSpot)
+Qualified companies are mapped and synchronized to HubSpot CRM with scores, domain references, and automated pipeline assignments:
+
+3. Deep Qualitative Qualification
+Sales representatives receive direct qualifying context inside custom HubSpot properties, removing manual discovery overhead:
+
+4. Immediate Outbound Alerting (Telegram)
+High-intent leads immediately trigger actionable mobile alerts with direct links and executive summaries:
+
+📂 Repository Structure
+Plaintext
+├── .env.example                     # Environment template for API keys & tokens
 ├── .gitignore                       # Isolation rules for secrets and local state
 ├── docker-compose.yml               # Container deployment spec for n8n service
 │
@@ -62,14 +85,40 @@ Orchestration: n8n self-hosted within a Docker environment with persistent volum
 │
 └── workflow/
     └── bant_lead_engine.json        # Exported production n8n workflow
-🚀 Quickstart & Deployment1. Environment SetupClone the repository and copy the environment template:Bashgit clone https://github.com/your-username/bant-lead-qualification-engine.git
+🚀 Quickstart & Deployment
+1. Environment Setup
+Clone the repository and copy the environment template:
+
+Bash
+git clone https://github.com/your-username/bant-lead-qualification-engine.git
 cd bant-lead-qualification-engine
 cp .env.example .env
-Populate the required credentials in .env[cite: 26]:BashOPENAI_API_KEY=your_openai_api_key
+Populate the required credentials in .env:
+
+Bash
+OPENAI_API_KEY=your_openai_api_key
 SERPER_API_KEY=your_serper_api_key
 SCRAPERAPI_KEY=your_scraperapi_key
 HUBSPOT_ACCESS_TOKEN=your_hubspot_token
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_CHAT_ID=your_telegram_chat_id
-2. Configure HubSpot PropertiesEnsure required custom properties are created in HubSpot prior to workflow import, as specified in docs/hubspot_custom_properties.md[cite: 26].3. Launch & Import WorkflowStart the n8n containerized service[cite: 26]:Bashdocker compose up -d
-Open your browser and navigate to http://localhost:5678[cite: 26].Select Workflows > Import from File and upload workflow/bant_lead_engine.json[cite: 26].Bind your credentials to the respective nodes and activate the workflow[cite: 26].🔒 Security & Data HygieneZero Hardcoded Secrets: Credentials, access tokens, and API keys are strictly injected via .env and secured n8n credential managers[cite: 26].PII Redaction Layer: Personal identity elements are stripped or hashed before evaluation to preserve privacy standards and prevent CRM contamination[cite: 26].Cost Cap Guardrails: Uses gpt-4o-mini with token constraints and validation quotas, preventing runaway billing on unvalidated web domains[cite: 26].
+2. Configure HubSpot Properties
+Ensure required custom properties are created in HubSpot prior to workflow import, as specified in docs/hubspot_custom_properties.md.
+
+3. Launch & Import Workflow
+Start the n8n containerized service:
+
+Bash
+docker compose up -d
+Open your browser and navigate to http://localhost:5678.
+
+Select Workflows > Import from File and upload workflow/bant_lead_engine.json.
+
+Bind your credentials to the respective nodes and activate the workflow.
+
+🔒 Security & Data Hygiene
+Zero Hardcoded Secrets: Credentials, access tokens, and API keys are strictly injected via .env and secured n8n credential managers.
+
+PII Redaction Layer: Personal identity elements are stripped or hashed before evaluation to preserve privacy standards and prevent CRM contamination.
+
+Cost Cap Guardrails: Uses gpt-4o-mini with token constraints and validation quotas, preventing runaway billing on unvalidated web domains.
