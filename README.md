@@ -1,3 +1,4 @@
+Markdown
 # 🎯 Autonomous BANT Lead Qualification & CRM Ingestion Engine
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -90,7 +91,7 @@ Plaintext
 Clone the repository and copy the environment template:
 
 Bash
-git clone https://github.com/your-username/bant-lead-qualification-engine.git
+git clone [https://github.com/your-username/bant-lead-qualification-engine.git](https://github.com/your-username/bant-lead-qualification-engine.git)
 cd bant-lead-qualification-engine
 cp .env.example .env
 Populate the required credentials in .env:
