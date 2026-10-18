@@ -1,4 +1,3 @@
-Markdown
 # 🎯 Autonomous BANT Lead Qualification & CRM Ingestion Engine
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -47,29 +46,39 @@ An event-driven, production-grade automation pipeline built with **n8n** that ac
    [Decision Gate] ──────(lead_score >= 70?)
          ├── YES ────────► [HubSpot CRM Integration] & [Telegram Alert Bot]
          └── NO  ────────► [Drop / Archive Unqualified Lead]
-Orchestration: n8n self-hosted within a Docker environment with persistent volume storage.
 
-LLM Engine: OpenAI gpt-4o-mini with temperature configured for deterministic JSON schema outputs.
+```
 
-Target CRM: HubSpot CRM API v3 with pre-mapped custom properties (bant_score, bant_summary, website).
+* **Orchestration:** n8n self-hosted within a Docker environment with persistent volume storage.
+* **LLM Engine:** OpenAI `gpt-4o-mini` with temperature configured for deterministic JSON schema outputs.
+* **Target CRM:** HubSpot CRM API v3 with pre-mapped custom properties (`bant_score`, `bant_summary`, `website`).
+* **Dispatch Layer:** Telegram Bot API delivering real-time actionable notifications to sales teams.
 
-Dispatch Layer: Telegram Bot API delivering real-time actionable notifications to sales teams.
+---
 
-📸 Production Run Previews
-1. Workflow Architecture & Canvas
-Full end-to-end orchestration in n8n showing discovery, conditional filtering, regex data sanitization, LLM grading, and conditional CRM routing:
+## 📸 Production Run Previews
 
-2. High-Precision CRM Ingestion (HubSpot)
+### 1. Workflow Architecture & Canvas
+
+Full end-to-end orchestration in **n8n** showing discovery, conditional filtering, regex data sanitization, LLM grading, and conditional CRM routing:
+
+### 2. High-Precision CRM Ingestion (HubSpot)
+
 Qualified companies are mapped and synchronized to HubSpot CRM with scores, domain references, and automated pipeline assignments:
 
-3. Deep Qualitative Qualification
+### 3. Deep Qualitative Qualification
+
 Sales representatives receive direct qualifying context inside custom HubSpot properties, removing manual discovery overhead:
 
-4. Immediate Outbound Alerting (Telegram)
+### 4. Immediate Outbound Alerting (Telegram)
+
 High-intent leads immediately trigger actionable mobile alerts with direct links and executive summaries:
 
-📂 Repository Structure
-Plaintext
+---
+
+## 📂 Repository Structure
+
+```text
 ├── .env.example                     # Environment template for API keys & tokens
 ├── .gitignore                       # Isolation rules for secrets and local state
 ├── docker-compose.yml               # Container deployment spec for n8n service
@@ -86,40 +95,63 @@ Plaintext
 │
 └── workflow/
     └── bant_lead_engine.json        # Exported production n8n workflow
-🚀 Quickstart & Deployment
-1. Environment Setup
+
+```
+
+---
+
+## 🚀 Quickstart & Deployment
+
+### 1. Environment Setup
+
 Clone the repository and copy the environment template:
 
-Bash
+```bash
 git clone [https://github.com/your-username/bant-lead-qualification-engine.git](https://github.com/your-username/bant-lead-qualification-engine.git)
 cd bant-lead-qualification-engine
 cp .env.example .env
-Populate the required credentials in .env:
 
-Bash
+```
+
+Populate the required credentials in `.env`:
+
+```bash
 OPENAI_API_KEY=your_openai_api_key
 SERPER_API_KEY=your_serper_api_key
 SCRAPERAPI_KEY=your_scraperapi_key
 HUBSPOT_ACCESS_TOKEN=your_hubspot_token
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_CHAT_ID=your_telegram_chat_id
-2. Configure HubSpot Properties
-Ensure required custom properties are created in HubSpot prior to workflow import, as specified in docs/hubspot_custom_properties.md.
 
-3. Launch & Import Workflow
+```
+
+### 2. Configure HubSpot Properties
+
+Ensure required custom properties are created in HubSpot prior to workflow import, as specified in `docs/hubspot_custom_properties.md`.
+
+### 3. Launch & Import Workflow
+
 Start the n8n containerized service:
 
-Bash
+```bash
 docker compose up -d
-Open your browser and navigate to http://localhost:5678.
 
-Select Workflows > Import from File and upload workflow/bant_lead_engine.json.
+```
 
-Bind your credentials to the respective nodes and activate the workflow.
+1. Open your browser and navigate to `http://localhost:5678`.
+2. Select **Workflows > Import from File** and upload `workflow/bant_lead_engine.json`.
+3. Bind your credentials to the respective nodes and activate the workflow.
 
-🔒 Security & Data Hygiene
-Zero Hardcoded Secrets: Credentials, access tokens, and API keys are strictly injected via .env and secured n8n credential managers.
+---
 
-PII Redaction Layer: Personal identity elements are stripped or hashed before evaluation to preserve privacy standards and prevent CRM contamination.
+## 🔒 Security & Data Hygiene
 
-Cost Cap Guardrails: Uses gpt-4o-mini with token constraints and validation quotas, preventing runaway billing on unvalidated web domains.
+* **Zero Hardcoded Secrets:** Credentials, access tokens, and API keys are strictly injected via `.env` and secured n8n credential managers.
+* **PII Redaction Layer:** Personal identity elements are stripped or hashed before evaluation to preserve privacy standards and prevent CRM contamination.
+* **Cost Cap Guardrails:** Uses `gpt-4o-mini` with token constraints and validation quotas, preventing runaway billing on unvalidated web domains.
+
+```
+
+Zapisz plik (Commit changes) – szary blok zamknie się dokładnie po diagramie ASCII, a poniżej wyrenderują się poprawne nagłówki i grafiki.
+
+```
