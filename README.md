@@ -115,7 +115,7 @@ High-intent leads immediately trigger actionable mobile alerts with direct links
 Clone the repository and copy the environment template:
 
 ```bash
-git clone https://github.com/your-username/bant-lead-qualification-engine.git
+git clone https://github.com/JohnStononloan/bant-lead-qualification-engine.git
 cd bant-lead-qualification-engine
 cp .env.example .env
 
