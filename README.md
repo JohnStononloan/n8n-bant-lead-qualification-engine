@@ -67,19 +67,19 @@ Full end-to-end orchestration in **n8n** showing discovery, conditional filterin
 ### 2. High-Precision CRM Ingestion (HubSpot)
 
 Qualified companies are mapped and synchronized to HubSpot CRM with scores, domain references, and automated pipeline assignments:
-...
+
 ![HubSpot Leads Table](assets/hubspot_leads_table.png)
 
 ### 3. Deep Qualitative Qualification
 
 Sales representatives receive direct qualifying context inside custom HubSpot properties, removing manual discovery overhead:
-...
+
 ![HubSpot Record BANT View](assets/hubspot_record_bant_view.png)
 
 ### 4. Immediate Outbound Alerting (Telegram)
 
 High-intent leads immediately trigger actionable mobile alerts with direct links and executive summaries:
-...
+
 ![Telegram Alert](assets/telegram_alert.png)
 
 ---
